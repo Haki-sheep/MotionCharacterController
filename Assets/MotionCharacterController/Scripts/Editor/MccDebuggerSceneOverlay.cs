@@ -1,3 +1,4 @@
+using MotionCharacterController;
 using UnityEditor;
 using UnityEngine;
 
@@ -65,62 +66,57 @@ namespace MotionCharacterController.Editor
                 return;
             }
 
-            MccMotorContext context = targetCharacter.Context;
-            Vector3 position = context.TransientPosition;
-            Quaternion rotation = context.TransientRotation;
+            var eSample = targetCharacter.CaptureDebugSample();
+            Vector3 ePosition = eSample.TransientPosition;
+            Quaternion eRotation = eSample.TransientRotation;
 
-            if (DrawCapsule && context.Capsule != null)
+            if (DrawCapsule && eSample.HasCapsule)
             {
                 Handles.color = new Color(0.2f, 0.8f, 1f, 0.9f);
-                DrawWireCapsule(position, rotation, context.Capsule.radius, context.Capsule.height, context.Capsule.center);
+                DrawWireCapsule(ePosition, eRotation, eSample.CapsuleRadius, eSample.CapsuleHeight, eSample.CapsuleCenter);
             }
 
             if (DrawVelocity)
             {
-                Vector3 velocity = targetCharacter.Velocity;
-                if (velocity.sqrMagnitude > 0.0001f)
+                Vector3 eVelocity = eSample.Velocity;
+                if (eVelocity.sqrMagnitude > 0.0001f)
                 {
                     Handles.color = Color.cyan;
-                    Handles.ArrowHandleCap(0, position, Quaternion.LookRotation(velocity.normalized), Mathf.Clamp(velocity.magnitude * 0.25f, 0.25f, 3f), EventType.Repaint);
-                    Handles.Label(position + velocity.normalized * 0.4f, $"速度(V) {velocity.magnitude:F2}");
+                    Handles.ArrowHandleCap(0, ePosition, Quaternion.LookRotation(eVelocity.normalized), Mathf.Clamp(eVelocity.magnitude * 0.25f, 0.25f, 3f), EventType.Repaint);
+                    Handles.Label(ePosition + eVelocity.normalized * 0.4f, $"速度(V) {eVelocity.magnitude:F2}");
                 }
             }
 
-            if (DrawGroundNormal && context.GroundingStatus.FoundAnyGround)
+            if (DrawGroundNormal && eSample.GroundingStatus.FoundAnyGround)
             {
-                Handles.color = context.GroundingStatus.IsStableOnGround ? Color.green : Color.yellow;
-                Handles.DrawLine(context.GroundingStatus.GroundPoint, context.GroundingStatus.GroundPoint + context.GroundingStatus.GroundNormal);
-                Handles.SphereHandleCap(0, context.GroundingStatus.GroundPoint, Quaternion.identity, 0.05f, EventType.Repaint);
+                Handles.color = eSample.GroundingStatus.IsStableOnGround ? Color.green : Color.yellow;
+                Handles.DrawLine(eSample.GroundingStatus.GroundPoint, eSample.GroundingStatus.GroundPoint + eSample.GroundingStatus.GroundNormal);
+                Handles.SphereHandleCap(0, eSample.GroundingStatus.GroundPoint, Quaternion.identity, 0.05f, EventType.Repaint);
             }
 
             if (DrawGroundProbe)
             {
-                float probeDistance = context.DebugGroundProbeDistance;
-                if (probeDistance <= 0f)
-                {
-                    probeDistance = GroundSolver.GetSelectedGroundProbeDistance(context);
-                }
-
-                Vector3 bottom = context.GetCapsuleBottomHemiAt(position, rotation);
+                float eProbeDistance = eSample.DebugGroundProbeDistance;
+                Vector3 eBottom = eSample.CapsuleBottomHemi;
                 Handles.color = new Color(1f, 0.85f, 0.2f, 0.9f);
-                Handles.DrawLine(bottom, bottom - context.CharacterUp * probeDistance);
-                Handles.Label(bottom, $"探测(Probe) {probeDistance:F3}");
+                Handles.DrawLine(eBottom, eBottom - eSample.CharacterUp * eProbeDistance);
+                Handles.Label(eBottom, $"探测(Probe) {eProbeDistance:F3}");
             }
 
-            if (DrawMovementHit && context.DebugHasMovementHit)
+            if (DrawMovementHit && eSample.DebugHasMovementHit)
             {
                 Handles.color = Color.magenta;
-                Handles.SphereHandleCap(0, context.DebugLastHitPoint, Quaternion.identity, 0.06f, EventType.Repaint);
-                Handles.DrawLine(context.DebugLastHitPoint, context.DebugLastHitPoint + context.DebugLastHitNormal);
+                Handles.SphereHandleCap(0, eSample.DebugLastHitPoint, Quaternion.identity, 0.06f, EventType.Repaint);
+                Handles.DrawLine(eSample.DebugLastHitPoint, eSample.DebugLastHitPoint + eSample.DebugLastHitNormal);
             }
 
-            if (DrawOverlaps)
+            if (DrawOverlaps && eSample.OverlapNormals != null)
             {
                 Handles.color = new Color(1f, 0.4f, 0.1f, 0.9f);
-                for (int i = 0; i < context.OverlapsCount; i++)
+                for (int i = 0; i < eSample.OverlapsCount; i++)
                 {
-                    OverlapResult overlap = context.Overlaps[i];
-                    Handles.DrawLine(position, position + overlap.Normal);
+                    Vector3 eOverlapNormal = eSample.OverlapNormals[i];
+                    Handles.DrawLine(ePosition, ePosition + eOverlapNormal);
                 }
             }
         }

@@ -1,3 +1,4 @@
+using MotionCharacterController;
 using UnityEngine;
 
 namespace MotionCharacterController.Editor
@@ -44,20 +45,20 @@ namespace MotionCharacterController.Editor
                 return;
             }
 
-            MccMotorContext context = character.Context;
-            int index = RingWriteIndex;
-            Phase1MsRing[index] = context.DebugPhase1Seconds * 1000f;
-            Phase2MsRing[index] = context.DebugPhase2Seconds * 1000f;
-            SweepCountRing[index] = context.DebugLastMovementSweeps;
+            var eSample = character.CaptureDebugSample();
+            int eIndex = RingWriteIndex;
+            Phase1MsRing[eIndex] = eSample.DebugPhase1Seconds * 1000f;
+            Phase2MsRing[eIndex] = eSample.DebugPhase2Seconds * 1000f;
+            SweepCountRing[eIndex] = eSample.DebugLastMovementSweeps;
             RingWriteIndex = (RingWriteIndex + 1) % RingCapacity;
             if (RingFilled < RingCapacity)
             {
                 RingFilled++;
             }
 
-            EvaluatePauseEvents(context);
-            lastAttachedRigidbody = context.AttachedRigidbody;
-            lastMustUngroundCounter = context.MustUngroundTimeCounter;
+            EvaluatePauseEvents(eSample);
+            lastAttachedRigidbody = eSample.AttachedRigidbody;
+            lastMustUngroundCounter = eSample.MustUngroundTimeCounter;
             hasSampled = true;
         }
 
@@ -79,35 +80,39 @@ namespace MotionCharacterController.Editor
             }
         }
 
-        private void EvaluatePauseEvents(MccMotorContext context)
+        /// <summary>
+        /// 按快照判断是否暂停编辑器
+        /// </summary>
+        /// <param name="sample">调试快照</param>
+        private void EvaluatePauseEvents(MccMotorDebugSample sample)
         {
             if (!hasSampled)
             {
                 return;
             }
 
-            bool shouldPause = false;
-            if (PauseOnExceedIterations && !context.DebugLastMoveCompleted)
+            bool eShouldPause = false;
+            if (PauseOnExceedIterations && !sample.DebugLastMoveCompleted)
             {
-                shouldPause = true;
+                eShouldPause = true;
             }
 
-            if (PauseOnBlockingCorner && context.DebugLastSweepState == MovementSweepState.FoundBlockingCorner)
+            if (PauseOnBlockingCorner && sample.DebugLastSweepState == MovementSweepState.FoundBlockingCorner)
             {
-                shouldPause = true;
+                eShouldPause = true;
             }
 
-            if (PauseOnForceUnground && context.MustUngroundTimeCounter > lastMustUngroundCounter)
+            if (PauseOnForceUnground && sample.MustUngroundTimeCounter > lastMustUngroundCounter)
             {
-                shouldPause = true;
+                eShouldPause = true;
             }
 
-            if (PauseOnPlatformChange && context.AttachedRigidbody != lastAttachedRigidbody)
+            if (PauseOnPlatformChange && sample.AttachedRigidbody != lastAttachedRigidbody)
             {
-                shouldPause = true;
+                eShouldPause = true;
             }
 
-            if (shouldPause)
+            if (eShouldPause)
             {
                 UnityEditor.EditorApplication.isPaused = true;
             }
